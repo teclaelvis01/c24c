@@ -62,18 +62,28 @@
           <!-- Información principal -->
           <div class="md:w-3/6 md:pl-6">
             <template v-if="isEditMode && editingCardId === card.id">
-              <input
-                v-model="editingCard.title"
-                class="w-full px-3 py-2 border rounded-lg mb-2"
-                placeholder="Card title"
-              />
-              <textarea
-                v-model="editingCard.description"
-                class="w-full px-3 py-2 border rounded-lg mb-2"
-                rows="3"
-                placeholder="Card description"
-              />
-              <div class="flex gap-4 mb-2">
+              <div class="mb-4">
+                <input
+                  v-model="editingCard.title"
+                  class="w-full px-3 py-2 border rounded-lg mb-1"
+                  placeholder="Card title"
+                  required
+                />
+                <p v-if="!editingCard.title" class="text-red-500 text-sm">Title is required</p>
+              </div>
+              <div class="mb-4">
+                <textarea
+                  v-model="editingCard.description"
+                  class="w-full px-3 py-2 border rounded-lg mb-1"
+                  rows="3"
+                  placeholder="Card description"
+                  required
+                />
+                <p v-if="!editingCard.description" class="text-red-500 text-sm">
+                  Description is required
+                </p>
+              </div>
+              <div class="flex gap-4 mb-4">
                 <div class="w-1/2">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Annual Fee</label>
                   <input
@@ -81,7 +91,12 @@
                     type="number"
                     class="w-full px-3 py-2 border rounded-lg"
                     placeholder="Annual fee amount"
+                    required
+                    min="0"
                   />
+                  <p v-if="editingCard.cost.amount < 0" class="text-red-500 text-sm">
+                    Amount must be positive
+                  </p>
                 </div>
                 <div class="w-1/2">
                   <label class="block text-sm font-medium text-gray-700 mb-1">First Year Fee</label>
@@ -90,13 +105,19 @@
                     type="number"
                     class="w-full px-3 py-2 border rounded-lg"
                     placeholder="First year fee amount"
+                    required
+                    min="0"
                   />
+                  <p v-if="editingCard.firstYearFee.amount < 0" class="text-red-500 text-sm">
+                    Amount must be positive
+                  </p>
                 </div>
               </div>
               <div class="flex gap-2 mt-2">
                 <button
                   @click="saveCard(card.id)"
-                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  :disabled="!isFormValid"
                 >
                   Save
                 </button>
@@ -166,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useCreditCardService } from '../services/creditCardService'
 import type { CreditCard, CreditCardFilters } from '../types/creditCard'
 
@@ -205,6 +226,15 @@ const filters = ref<CreditCardFilters>({
   sortBy: 'cost',
   sortOrder: 'asc',
   page: 1,
+})
+
+const isFormValid = computed(() => {
+  return (
+    editingCard.value.title &&
+    editingCard.value.description &&
+    editingCard.value.cost.amount >= 0 &&
+    editingCard.value.firstYearFee.amount >= 0
+  )
 })
 
 const toggleEditMode = () => {
@@ -273,8 +303,8 @@ const cancelEdit = () => {
 }
 
 const saveCard = async (id: number) => {
-  if (!editingCard.value.title || !editingCard.value.description) {
-    error.value = 'Title and description are required'
+  if (!isFormValid.value) {
+    error.value = 'Please fill in all required fields with valid values'
     return
   }
 
@@ -282,11 +312,11 @@ const saveCard = async (id: number) => {
     title: editingCard.value.title,
     description: editingCard.value.description,
     cost: {
-      amount: editingCard.value.cost?.amount ?? 0,
+      amount: editingCard.value.cost.amount,
       currencyCode: 'EUR',
     },
     firstYearFee: {
-      amount: editingCard.value.firstYearFee?.amount ?? 0,
+      amount: editingCard.value.firstYearFee.amount,
       currencyCode: 'EUR',
     },
   })

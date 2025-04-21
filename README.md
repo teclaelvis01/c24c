@@ -2,6 +2,11 @@
 
 This template should help get you started developing with Vue 3 in Vite.
 
+## Prerequisites
+
+- Node.js 20.x (recommended v20.13.1 or higher)
+- Yarn package manager
+
 ## Recommended IDE Setup
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
@@ -17,6 +22,10 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 ## Project Setup
 
 ```sh
+# Install Node.js 20.x if you haven't already
+nvm use 20
+
+# Install dependencies
 yarn
 ```
 

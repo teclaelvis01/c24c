@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { CreditCard, CreditCardResponse, CreditCardFilters } from '@/types/creditCard'
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 export const useCreditCardService = () => {
   const creditCards = ref<CreditCard[]>([])
@@ -11,7 +11,7 @@ export const useCreditCardService = () => {
     total: 0,
     page: 1,
     limit: 10,
-    pages: 0
+    pages: 0,
   })
 
   const fetchCreditCards = async (filters: CreditCardFilters = {}) => {
@@ -25,7 +25,7 @@ export const useCreditCardService = () => {
       if (filters.page) queryParams.append('page', filters.page.toString())
 
       const response = await fetch(`${API_BASE_URL}/cards?${queryParams.toString()}`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener las tarjetas de crédito')
       }
@@ -47,15 +47,15 @@ export const useCreditCardService = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       })
-      
+
       if (!response.ok) {
         throw new Error('Error al actualizar la tarjeta de crédito')
       }
 
       const updatedCard = await response.json()
-      const index = creditCards.value.findIndex(card => card.id === id)
+      const index = creditCards.value.findIndex((card) => card.id === id)
       if (index !== -1) {
         creditCards.value[index] = { ...creditCards.value[index], ...updatedCard }
       }
@@ -69,7 +69,7 @@ export const useCreditCardService = () => {
   const getCreditCardById = async (id: number): Promise<CreditCard | null> => {
     try {
       const response = await fetch(`${API_BASE_URL}/cards/${id}`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener la tarjeta de crédito')
       }
@@ -88,6 +88,6 @@ export const useCreditCardService = () => {
     pagination,
     fetchCreditCards,
     updateCreditCard,
-    getCreditCardById
+    getCreditCardById,
   }
-} 
+}
