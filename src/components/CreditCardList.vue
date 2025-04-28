@@ -99,16 +99,16 @@
                   </p>
                 </div>
                 <div class="w-1/2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">First Year Fee</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Incentive Amount</label>
                   <input
-                    v-model.number="editingCard.firstYearFee.amount"
+                    v-model.number="editingCard.incentiveAmount.amount"
                     type="number"
                     class="w-full px-3 py-2 border rounded-lg"
-                    placeholder="First year fee amount"
+                    placeholder="Incentive amount"
                     required
                     min="0"
                   />
-                  <p v-if="editingCard.firstYearFee.amount < 0" class="text-red-500 text-sm">
+                  <p v-if="editingCard.incentiveAmount.amount < 0" class="text-red-500 text-sm">
                     Amount must be positive
                   </p>
                 </div>
@@ -116,10 +116,11 @@
               <div class="flex gap-2 mt-2">
                 <button
                   @click="saveCard(card.id)"
-                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                  :disabled="!isFormValid"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                  :disabled="!isFormValid || isSaving"
                 >
-                  Save
+                  <div v-if="isSaving" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  {{ isSaving ? 'Saving...' : 'Save' }}
                 </button>
                 <button
                   @click="cancelEdit"
@@ -154,7 +155,7 @@
             </div>
             <div class="text-sm text-gray-600">Annual fee</div>
             <div class="text-xs text-gray-500">
-              (first year fee: {{ card.firstYearFee.amount }} {{ card.firstYearFee.currencyCode }})
+              (incentive amount: {{ card.incentiveAmount.amount }} {{ card.incentiveAmount.currencyCode }})
             </div>
             <div class="mt-1">Bank: {{ card.bank.name }}</div>
             <a
@@ -196,6 +197,7 @@ const { creditCards, loading, error, pagination, fetchCreditCards, updateCreditC
 
 const isEditMode = ref(false)
 const editingCardId = ref<number | null>(null)
+const isSaving = ref(false)
 const editingCard = ref<CreditCard>({
   id: 0,
   externalProductId: '',
@@ -205,10 +207,6 @@ const editingCard = ref<CreditCard>({
   logoUrl: '',
   deepLink: '',
   cost: {
-    amount: 0,
-    currencyCode: 'EUR',
-  },
-  firstYearFee: {
     amount: 0,
     currencyCode: 'EUR',
   },
@@ -233,7 +231,7 @@ const isFormValid = computed(() => {
     editingCard.value.title &&
     editingCard.value.description &&
     editingCard.value.cost.amount >= 0 &&
-    editingCard.value.firstYearFee.amount >= 0
+    editingCard.value.incentiveAmount.amount >= 0
   )
 })
 
@@ -256,10 +254,6 @@ const startEdit = (card: CreditCard) => {
     deepLink: card.deepLink,
     cost: {
       amount: card.cost.amount,
-      currencyCode: 'EUR',
-    },
-    firstYearFee: {
-      amount: card.firstYearFee.amount,
       currencyCode: 'EUR',
     },
     incentiveAmount: {
@@ -287,10 +281,6 @@ const cancelEdit = () => {
       amount: 0,
       currencyCode: 'EUR',
     },
-    firstYearFee: {
-      amount: 0,
-      currencyCode: 'EUR',
-    },
     incentiveAmount: {
       amount: 0,
       currencyCode: 'EUR',
@@ -308,47 +298,48 @@ const saveCard = async (id: number) => {
     return
   }
 
-  const updatedCard = await updateCreditCard(id, {
-    title: editingCard.value.title,
-    description: editingCard.value.description,
-    cost: {
-      amount: editingCard.value.cost.amount,
-      currencyCode: 'EUR',
-    },
-    firstYearFee: {
-      amount: editingCard.value.firstYearFee.amount,
-      currencyCode: 'EUR',
-    },
-  })
-
-  if (updatedCard) {
-    editingCardId.value = null
-    editingCard.value = {
-      id: 0,
-      externalProductId: '',
-      title: '',
-      type: '',
-      description: '',
-      logoUrl: '',
-      deepLink: '',
+  isSaving.value = true
+  try {
+    const updatedCard = await updateCreditCard(id, {
+      title: editingCard.value.title,
+      description: editingCard.value.description,
       cost: {
-        amount: 0,
-        currencyCode: 'EUR',
-      },
-      firstYearFee: {
-        amount: 0,
+        amount: editingCard.value.cost.amount,
         currencyCode: 'EUR',
       },
       incentiveAmount: {
-        amount: 0,
+        amount: editingCard.value.incentiveAmount.amount,
         currencyCode: 'EUR',
       },
-      bank: {
+    })
+
+    if (updatedCard) {
+      editingCardId.value = null
+      editingCard.value = {
         id: 0,
-        name: '',
-      },
+        externalProductId: '',
+        title: '',
+        type: '',
+        description: '',
+        logoUrl: '',
+        deepLink: '',
+        cost: {
+          amount: 0,
+          currencyCode: 'EUR',
+        },
+        incentiveAmount: {
+          amount: 0,
+          currencyCode: 'EUR',
+        },
+        bank: {
+          id: 0,
+          name: '',
+        },
+      }
+      await fetchCreditCards(filters.value)
     }
-    await fetchCreditCards(filters.value)
+  } finally {
+    isSaving.value = false
   }
 }
 
