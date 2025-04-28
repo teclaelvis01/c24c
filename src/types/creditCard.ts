@@ -6,7 +6,6 @@ export interface CreditCard {
   description: string
   logoUrl: string
   deepLink: string
-  firstYearFee: FirstYearFee
   incentiveAmount: IncentiveAmount
   cost: Cost
   bank: Bank
@@ -16,11 +15,6 @@ export interface CreditCard {
 export interface Feature {
   type: 'positive' | 'warning' | 'normal'
   text: string
-}
-
-export interface FirstYearFee {
-  amount: number
-  currencyCode: string
 }
 
 export interface IncentiveAmount {
