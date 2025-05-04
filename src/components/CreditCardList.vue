@@ -72,12 +72,9 @@
                 <p v-if="!editingCard.title" class="text-red-500 text-sm">Title is required</p>
               </div>
               <div class="mb-4">
-                <textarea
+                <EditableTextWithMarkers
                   v-model="editingCard.description"
-                  class="w-full px-3 py-2 border rounded-lg mb-1"
-                  rows="3"
-                  placeholder="Card description"
-                  required
+                  class="w-full"
                 />
                 <p v-if="!editingCard.description" class="text-red-500 text-sm">
                   Description is required
@@ -188,9 +185,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useCreditCardService } from '../services/creditCardService'
 import type { CreditCard, CreditCardFilters } from '../types/creditCard'
+import EditableTextWithMarkers from './EditableTextWithMarkers.vue'
 
 const { creditCards, loading, error, pagination, fetchCreditCards, updateCreditCard } =
   useCreditCardService()
@@ -234,6 +232,10 @@ const isFormValid = computed(() => {
     editingCard.value.incentiveAmount.amount >= 0
   )
 })
+
+const showMarkerSelector = ref(false)
+const markerSelectorStyle = ref({ top: '0px', left: '0px' })
+const selectedLine = ref<HTMLElement | null>(null)
 
 const toggleEditMode = () => {
   isEditMode.value = !isEditMode.value
@@ -353,7 +355,75 @@ const handlePageChange = (page: number) => {
   fetchCreditCards(filters.value)
 }
 
+const updateMarkerPosition = (lineElement: HTMLElement, container: HTMLElement) => {
+  const rect = lineElement.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  
+  markerSelectorStyle.value = {
+    top: `${rect.top - containerRect.top}px`,
+    left: `${rect.left - containerRect.left}px`
+  }
+}
+
+const updateSelectedLine = (target: HTMLElement) => {
+  const selection = window.getSelection()
+  if (selection) {
+    const range = selection.getRangeAt(0)
+    const lineElement = range.startContainer.parentElement
+    
+    if (lineElement) {
+      selectedLine.value = lineElement
+      updateMarkerPosition(lineElement, target)
+      showMarkerSelector.value = true
+    }
+  }
+}
+
+const handleLineClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'DIV' && target.contentEditable === 'true') {
+    updateSelectedLine(target)
+  }
+}
+
+const handleKeyUp = (e: KeyboardEvent) => {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'DIV' && target.contentEditable === 'true') {
+    updateSelectedLine(target)
+  }
+}
+
+const markLine = (marker: string) => {
+  if (selectedLine.value) {
+    const lineText = selectedLine.value.textContent || ''
+    const hasMarker = lineText.startsWith('✅') || lineText.startsWith('﹗')
+    
+    if (hasMarker) {
+      selectedLine.value.textContent = lineText.substring(1)
+    }
+    
+    if (!hasMarker || marker !== lineText[0]) {
+      selectedLine.value.textContent = marker + ' ' + lineText
+    }
+    
+    showMarkerSelector.value = false
+  }
+}
+
+// Close selector when clicking outside
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.marker-selector') && !target.closest('[contenteditable="true"]')) {
+    showMarkerSelector.value = false
+  }
+}
+
 onMounted(() => {
   fetchCreditCards(filters.value)
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
